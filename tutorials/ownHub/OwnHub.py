@@ -8,6 +8,15 @@ class OwnHub(j.application.JSBaseClass):
         self.__jslocation__ = "j.tutorials.ownhub"
         self.name = "ownhub"
         JSBASE.__init__(self)
+        # font style
+        self.CEND = "\33[0m"
+        self.CBOLD = "\33[1m"
+        # font colors
+        self.CRED = "\33[31m"
+        self.CGREEN = "\33[32m"
+        self.CYELLOW = "\33[33m"
+        self.CGREY = "\33[90m"
+        self.CWHITE2 = "\33[97m"
 
     def run(self):
         """
@@ -31,48 +40,71 @@ class OwnHub(j.application.JSBaseClass):
         2. Use as a regular hub to upload flist {example}
 
         """
-        # TODO validation on inputs
+        print(self.CBOLD + self.CGREEN + """This tutorial will guide you build, install, sandbox your own hub""")
 
-        # TODO if condition to start the ownhub locally without using an flist or creating container
-        # setup_mode = input(
-        #     """
-        # Please choose and enter the mode of setup:
-        #     1- On a new container
-        #     2- Local on current system
-        # """
-        # )
-        # if setup_mode == 1:
-        # elif setup_mode == 2:
-        # else:
+        setup_mode = input(
+            self.CBOLD
+            + self.CWHITE2
+            + """Please choose and enter the mode of setup:
+            1- Local on current system (This will build, install, start ownhub server will take a few minutes)
+            2- On a remote zos container (This will deploy ownhub on a zos container, you must have zos's node's ip)
+                Choose (default 2): """
+        )
+        if setup_mode == "1":
+            print(self.CEND + self.CGREEN + "\nDeploying the hub on local container\n")
+            docker_ip = input(self.CBOLD + self.CWHITE2 + "Please input your docker ip: ")
+            print(self.CEND + self.CYELLOW + '\n>> j.builders.apps.hub.in_docker("%s")\n' % docker_ip)
+            j.builders.apps.hub.in_docker(docker_ip)
+            input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (Install ownhub) \n")
+            print(self.CEND + self.CYELLOW + ">> j.builders.apps.hub.install(reset=True)\n")
+            print(self.CGREY)
+            j.builders.apps.hub.install(reset=True)
+            input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (Start ownhub) \n")
+            print(self.CEND + self.CYELLOW + ">> j.builders.apps.hub.start()\n")
+            j.builders.apps.hub.start()
+            print(self.CBOLD + self.CRED + "\nDone and ownhub available at %s:5555\n" % docker_ip)
+            print(self.CBOLD + self.CRED + "Congratulations you now have your own hub!\n")
 
-        merged_flist = input("Do you have a ready flist of the ownHub to create the container with locally (y/n)? ")
+        merged_flist = input(
+            self.CBOLD
+            + self.CWHITE2
+            + "Do you have a ready flist of the ownHub to create the container with locally (y/[n])? "
+        )
         if merged_flist == "y":
             flist_root_url = input("First enter the link to the merged flist: ")
-            ip_node = input("Then enter the node's IP to create the container on locally ")
+            ip_node = input("Then enter the node's IP to create the container on ")
             self.create_container(flist_root_url, ip_node)
             print("Done and ownhub available at %s:5555" % ip_node)
             return
 
-        print("Initially 0-hub client will be installed to be used to create flists")
-        print("pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'")
-        print("Installing zerohub...")
+        print(self.CEND + self.CGREEN + "\nInitially 0-hub client will be installed to be used to create flists\n")
+        print(
+            self.CEND
+            + self.CYELLOW
+            + ">> pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'\n"
+        )
+        print(self.CEND + self.CGREY + "Installing zerohub...")
         cmd = "pip3 install -e 'git+https://github.com/threefoldtech/0-hub#egg=zerohub&subdirectory=client'"
         j.sal.process.execute(cmd)
-        input("Enter any key for the next step! ")
-
+        input(self.CBOLD + self.CWHITE2 + "\nEnter any key for the next step: (Creating zhub client instance) \n")
         # Creating zhub client instance
         if not j.clients.zhub.exists("tutorials"):
-            generate_zhub = input("No 0-hub client was found. Do you want to continue to create 0-hub client (y/n)? ")
-            if generate_zhub == "y":
-                # TODO
+            generate_zhub = input(
+                self.CBOLD
+                + self.CWHITE2
+                + "No 0-hub client was found. Do you want to continue to create 0-hub client ([y]/n)? "
+            )
+            if not generate_zhub == "n":
                 # get iyo params (client_secr, client id)
-                iyo_client_id = input("Provide itsyouonline application id: ")
+                iyo_client_id = input("\nProvide itsyouonline application id: ")
                 iyo_client_secret = input("Provide itsyouonline corresponding secret: ")
                 # get iyo client
+                print(self.CEND + self.CGREEN + "\nCreating itsyouonline client using the following command...")
                 print(
-                    '>> iyo_client = j.clients.itsyouonline.get("tutorials", application_id=iyo_client_id, secret=iyo_client_secret)'
+                    self.CEND
+                    + self.CYELLOW
+                    + '\n>> iyo_client = j.clients.itsyouonline.get("tutorials", application_id=iyo_client_id, secret=iyo_client_secret)\n'
                 )
-                print("**Creating itsyouonline client using the following command...")
                 iyo_client = j.clients.itsyouonline.get(
                     "tutorials",
                     baseurl="https://itsyou.online/api",
@@ -82,53 +114,66 @@ class OwnHub(j.application.JSBaseClass):
                 print("**Created itsyouonline client...")
                 print(iyo_client)
 
-                input("Enter any key for the next step! *generate token* \n")
-                print(">> token = iyo.jwt_get().jwt")
-                print("Generating token from itsyouonline client to be used for authenticating zhub client\n\n\n")
+                input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (generate token) \n")
+                print(
+                    self.CEND
+                    + self.CGREEN
+                    + "Generating token from itsyouonline client to be used for authenticating zhub client\n"
+                )
+                print(self.CEND + self.CYELLOW + ">> token = iyo.jwt_get().jwt\n")
                 token = iyo_client.jwt_get().jwt
 
                 # generate zhub client with name tutorials
-                input("Enter any key for the next step! *zhub client* \n")
-                print('>> zhub_client = j.clients.zhub.get("tutorials", token_=token)')
-                print("**Creating 0-hub client...\n\n\n")
+                input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (zhub client) \n")
+                print(self.CEND + self.CGREEN + "\n**Creating 0-hub client...\n")
+                print(self.CEND + self.CYELLOW + '>> zhub_client = j.clients.zhub.get("tutorials", token_=token)\n')
                 zhub_client = j.clients.zhub.get("tutorials", token_=token)
 
-                input("Enter any key for the next step! *authenticate zhub client*")
-                print(">> zhub_client.authenticate()")
-                print("Authenticating 0-hub client to be used...")
+                input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (authenticate zhub client)\n")
+                print(self.CEND + self.CGREEN + "Authenticating 0-hub client to be used...\n")
+                print(self.CEND + self.CYELLOW + ">> zhub_client.authenticate()\n")
                 zhub_client.authenticate()
-                print("0-hub client ready to be used\n\n\n")
+                print(self.CEND + self.CGREEN + "0-hub client ready to be used\n")
 
             else:
-                raise RuntimeError("0-hub client required to continue the tutorial")
+                raise RuntimeError("0-hub client is exists required to continue the tutorial please run cleanup")
 
         if not zhub_client:
             zhub_client = j.clients.zhub.get("tutorials")
 
         # Sandbox hub
-        input("Enter any key for the next step! *create sandbox*")
-        print("Build, install, then sandbox your ownHub's flist to be used locally")
-        print("Sandbox ownHub and upload to hub.grid.tf to merge with jumpscale flist")
-        print(">> j.builders.apps.hub.sandbox(zhub_client=zhub_client, flist_create=True, reset=True) ")
+        input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (create sandbox)\n")
+        print(self.CEND + self.CGREEN + "\nBuild, install, then sandbox your ownHub's flist to be used locally\n")
+        print(self.CEND + self.CGREEN + "Sandbox ownHub and upload to hub.grid.tf to merge with jumpscale flist")
         print(
-            """
-        The sandbox function invokes multiple other functions to generate the flist:
-            - build: downloads and builds from source code the binaries required to be added in the flist (including dependencies)
-            - install: copies the binaries to proper locations locally (in /sandbox directory) and makes any required configurations
-            - sandbox: sandbox all the needed files and configurations and creates an flist that is uploaded to the remote hub
+            self.CEND
+            + self.CYELLOW
+            + "\n>> j.builders.apps.hub.sandbox(zhub_client=zhub_client, flist_create=True, reset=True)\n"
+        )
+        print(
+            self.CEND
+            + self.CGREEN
+            + """The sandbox function invokes multiple other functions to generate the flist:
+        - build: downloads and builds from source code the binaries required to be added in the flist (including dependencies)
+        - install: copies the binaries to proper locations locally (in /sandbox directory) and makes any required configurations
+        - sandbox: sandbox all the needed files and configurations and creates an flist that is uploaded to the remote hub
         Creating flist and uploading flist to hub.grid.tf ...
         """
         )
         j.builders.apps.hub.sandbox(zhub_client=zhub_client, flist_create=True, reset=True)
+
         print(
-            "Flist created and uploaded on https://hub.grid.tf/HUB_USERNAME/zerohub.flist where HUN_USERNAME is your username on hub.grid.tf\n\n\n"
+            self.CEND
+            + self.CGREEN
+            + "\nFlist created and uploaded on https://hub.grid.tf/HUB_USERNAME/zerohub.flist where HUN_USERNAME is your username on hub.grid.tf\n\n\n"
         )
 
         # Merge flist with jumpscale flist
-        input("Enter any key for the next step! ")
+        input(self.CBOLD + self.CWHITE2 + "\nEnter any key for the next step: (Merge flist with jumpscale flist)\n")
         print(
-            """
-        Now you should merge the flist generated with a jumpscale flist!
+            self.CEND
+            + self.CGREEN
+            + """Now you should merge the flist generated with a jumpscale flist!
         You can do the merge manually by visiting https://hub.grid.tf/merge
 
         based on: https://hub.grid.tf/HUB_USERNAME/zerohub.flist
@@ -136,30 +181,47 @@ class OwnHub(j.application.JSBaseClass):
 
         
 
-        Once the merge is done, get the url created for the merged flist to create a container with it.
+        Once the merge is done, get the url created for the merged flist to create a container with it./n
         """
         )
 
         # Create container
-        flist_root_url = input("Enter the url once you have recieved the merged flist's url!")
+        flist_root_url = input(
+            self.CBOLD + self.CWHITE2 + "\nEnter the url once you have recieved the merged flist's url!\n"
+        )
         counter = 0
         while not flist_root_url and counter < 6:
-            flist_root_url = input("Enter again the merged flist's url!")
+            flist_root_url = input(self.CBOLD + self.CWHITE2 + "\nEnter again the merged flist's url!\n")
             counter += 1
-        ip_node = input("Then enter the node's IP to create the container on locally ")
+        ip_node = input(self.CBOLD + self.CWHITE2 + "\nThen enter the node's IP to create the container on\n")
         self.create_container(flist_root_url, ip_node)
 
-        print("Done and ownhub available at %s:5555" % ip_node)
-        print("Congratulations you now have your own hub!")
+        print(self.CBOLD + self.CGREEN + "\nDone and ownhub available at %s:5555\n" % ip_node)
+        print(
+            self.CBOLD + self.CGREEN + "Congratulations you now have your own hub!, wait for it initalize then use it\n"
+        )
 
     def create_container(self, root_url, ip_node):
+        print(self.CEND + self.CGREEN + "\nCreating a zos container\n")
+        print(self.CEND + self.CYELLOW + 'cl = j.clients.zos.get("zhub", host=ip_node)\n')
         cl = j.clients.zos.get("zhub", host=ip_node)
-
+        print(
+            self.CEND
+            + self.CYELLOW
+            + """cl.client.container.create(
+            name="tutorials",
+            root_url=root_url,
+            nics=[{"type": "default", "name": "defaultnic", "id": " None"}],
+            port={5555: 5555},
+            env={"IP_PORT": ip_node + ":5555"},
+        ).get()
+        """
+        )
         cl.client.container.create(
             name="tutorials",
-            root_url="your_flist_after_merge",
+            root_url=root_url,
             nics=[{"type": "default", "name": "defaultnic", "id": " None"}],
-            port={2015: 2015, 8080: 80, 5555: 5555},
+            port={5555: 5555},
             env={"IP_PORT": ip_node + ":5555"},
         ).get()
 
@@ -167,9 +229,12 @@ class OwnHub(j.application.JSBaseClass):
         """
         Cleanup a previous run of the tutorial
         """
-        if j.clients.iyo.exists("tutorials"):
-            j.clients.iyo.exists("tutorials").delete()
+        if j.clients.itsyouonline.exists("tutorials"):
+            j.clients.itsyouonline.delete("tutorials")
 
         j.clients.zhub.get("tutorials").delete()
-        j.builders.hub.reset()
+        j.clients.zos
+        j.builders.apps.hub.stop()
+        j.builders.apps.hub.reset()
+        j.clients.zos.get("zhub").containers.get("tutorials").stop()
 
