@@ -40,44 +40,41 @@ class OwnHub(j.application.JSBaseClass):
         2. Use as a regular hub to upload flist {example}
 
         """
-        print(self.CBOLD + self.CGREEN + """This tutorial will guide you build, install, sandbox your own hub""")
+        print(
+            self.CBOLD
+            + self.CGREEN
+            + """This tutorial will guide you build, install, sandbox builders with your own hub\n"""
+        )
+
+        ownhub_instance = input(self.CBOLD + self.CWHITE2 + "Do you have your instance of ownhub (y/[n])?")
+
+        if ownhub_instance == "y":
+            print(self.CEND + self.CGREEN + "\nDeploying the hub on local container\n")
+            self._builder_example()
+            return
 
         setup_mode = input(
             self.CBOLD
             + self.CWHITE2
-            + """Please choose and enter the mode of setup your ownhub:
+            + """\nPlease choose and enter the mode of setup your ownhub:
             1- Local on current system (This will build, install, start ownhub server will take a few minutes)
             2- On a remote zos container (This will deploy ownhub on a zos container, you must have zos's node's ip)
-                Choose (default 2): """
+            Choose (default 2): """
         )
         if setup_mode == "1":
-            print(self.CEND + self.CGREEN + "\nDeploying the hub on local container\n")
-            docker_ip = input(self.CBOLD + self.CWHITE2 + "Please input your docker ip: ")
-            print(self.CEND + self.CYELLOW + '\n>> j.builders.apps.hub.in_docker("%s")\n' % docker_ip)
-            j.builders.apps.hub.in_docker(docker_ip)
-            input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (Install ownhub) \n")
-            print(self.CEND + self.CYELLOW + ">> j.builders.apps.hub.install(reset=True)\n")
-            print(self.CGREY)
-            j.builders.apps.hub.install(reset=True)
-            input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (Start ownhub) \n")
-            print(self.CEND + self.CYELLOW + ">> j.builders.apps.hub.start()\n")
-            j.builders.apps.hub.start()
-            print(self.CBOLD + self.CGREEN + "\nDone and ownhub available at %s:5555\n" % docker_ip)
-            print(self.CBOLD + self.CGREEN + "Congratulations you now have your own hub!\n")
+            self._ownhub_local()
+            self._builder_example()
             return
 
-        merged_flist = input(
-            self.CBOLD
-            + self.CWHITE2
-            + "Do you have a ready flist of the ownHub to create the container with locally (y/[n])? "
-        )
-        if merged_flist == "y":
-            flist_root_url = input("First enter the link to the merged flist: ")
-            ip_node = input("Then enter the node's IP to create the container on ")
-            self.create_container(flist_root_url, ip_node)
-            print("Done and ownhub available at %s:5555" % ip_node)
-            return
+        ## zhub client
+        zhub_client = self._create_zhub_client()
+        ## sandbox hub
+        self._ownhub_sandbox(zhub_client)
+        ## builder example
+        self._builder_example()
 
+    # create zhubclient with its you online secret and id
+    def _create_zhub_client(self):
         print(self.CEND + self.CGREEN + "\nInitially 0-hub client will be installed to be used to create flists\n")
         print(
             self.CEND
@@ -112,6 +109,7 @@ class OwnHub(j.application.JSBaseClass):
                     application_id=iyo_client_id,
                     secret=iyo_client_secret,
                 )
+                iyo_client.save()
                 print("**Created itsyouonline client...")
                 print(iyo_client)
 
@@ -129,18 +127,51 @@ class OwnHub(j.application.JSBaseClass):
                 print(self.CEND + self.CGREEN + "\n**Creating 0-hub client...\n")
                 print(self.CEND + self.CYELLOW + '>> zhub_client = j.clients.zhub.get("tutorials", token_=token)\n')
                 zhub_client = j.clients.zhub.get("tutorials", token_=token)
-
+                zhub_client.save()
                 input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (authenticate zhub client)\n")
                 print(self.CEND + self.CGREEN + "Authenticating 0-hub client to be used...\n")
                 print(self.CEND + self.CYELLOW + ">> zhub_client.authenticate()\n")
                 zhub_client.authenticate()
                 print(self.CEND + self.CGREEN + "0-hub client ready to be used\n")
-
             else:
                 raise RuntimeError("0-hub client is exists required to continue the tutorial please run cleanup")
+            return zhub_client
 
-        if not zhub_client:
-            zhub_client = j.clients.zhub.get("tutorials")
+    # creat ownhub on local machine
+    def _ownhub_local(self):
+        print(self.CEND + self.CGREEN + "\nDeploying the hub on local container\n")
+        docker_ip = input(self.CBOLD + self.CWHITE2 + "Please input your docker ip: ")
+        print(self.CEND + self.CYELLOW + '\n>> j.builders.apps.hub.in_docker("%s")\n' % docker_ip)
+        j.builders.apps.hub.in_docker(docker_ip)
+        input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (Install ownhub) \n")
+        print(self.CEND + self.CYELLOW + ">> j.builders.apps.hub.install(reset=True)\n")
+        print(self.CGREY)
+        j.builders.apps.hub.install(reset=True)
+        input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (Start ownhub) \n")
+        print(self.CEND + self.CYELLOW + ">> j.builders.apps.hub.start()\n")
+        j.builders.apps.hub.start()
+        print(self.CBOLD + self.CGREEN + "\nDone and ownhub available at http://%s:5555\n" % docker_ip)
+        print(self.CBOLD + self.CGREEN + "Congratulations you now have your own hub!\n")
+
+    # make an flist from ownhub
+    def _ownhub_sandbox(self, zhub_client):
+        merged_flist = input(
+            self.CBOLD
+            + self.CWHITE2
+            + "Do you have a ready flist of the ownHub to create the container with locally (y/[n])? "
+        )
+        if merged_flist == "y":
+            flist_root_url = input("First enter the link to the merged flist: ")
+            ip_node = input("Then enter the node's IP to create the container on: ")
+            jwt = input("Then enter the node's jwt if required: ")
+            self._create_container(flist_root_url, ip_node, jwt)
+            print("Done and ownhub available at http://%s:5555" % ip_node)
+            print(
+                self.CBOLD
+                + self.CGREEN
+                + "Congratulations you now have your zos container with odoo!, wait for it initalize then use it\n"
+            )
+            return
 
         # Sandbox hub
         input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (create sandbox)\n")
@@ -194,18 +225,20 @@ class OwnHub(j.application.JSBaseClass):
         while not flist_root_url and counter < 6:
             flist_root_url = input(self.CBOLD + self.CWHITE2 + "\nEnter again the merged flist's url!\n")
             counter += 1
-        ip_node = input(self.CBOLD + self.CWHITE2 + "\nThen enter the node's IP to create the container on\n")
-        self.create_container(flist_root_url, ip_node)
+        ip_node = input(self.CBOLD + self.CWHITE2 + "Then enter the node's IP to create the container on")
+        jwt = input("Then enter the node's jwt if required: ")
+        self._create_container(flist_root_url, ip_node, jwt)
 
-        print(self.CBOLD + self.CGREEN + "\nDone and ownhub available at %s:5555\n" % ip_node)
+        print(self.CBOLD + self.CGREEN + "\nDone and ownhub available at http://%s:5555\n" % ip_node)
         print(
             self.CBOLD + self.CGREEN + "Congratulations you now have your own hub!, wait for it initalize then use it\n"
         )
 
-    def create_container(self, root_url, ip_node):
+    # deploy on a container
+    def _create_container(self, root_url, ip_node, jwt):
         print(self.CEND + self.CGREEN + "\nCreating a zos container\n")
-        print(self.CEND + self.CYELLOW + 'cl = j.clients.zos.get("zhub", host=ip_node)\n')
-        cl = j.clients.zos.get("zhub", host=ip_node)
+        print(self.CEND + self.CYELLOW + 'cl = j.clients.zos.get("zhub", host=ip_node, password=jwt)\n')
+        cl = j.clients.zos.get("zhub", host=ip_node, password=jwt)
         print(
             self.CEND
             + self.CYELLOW
@@ -215,19 +248,22 @@ class OwnHub(j.application.JSBaseClass):
             nics=[{"type": "default", "name": "defaultnic", "id": " None"}],
             port={5555: 5555},
             env={"IP_PORT": ip_node + ":5555"},
-        ).get()
+            ).get()
         """
         )
         cl.client.container.create(
             name="tutorials",
             root_url=root_url,
             nics=[{"type": "default", "name": "defaultnic", "id": " None"}],
-            port={5555: 5555},
+            port={5555: 5555, 8069: 8069},
             env={"IP_PORT": ip_node + ":5555"},
         ).get()
 
-    def builder_example(self, odoo_ip):
+    # builder lifecycle example
+    def _builder_example(self):
         # intro
+        print(self.CEND + self.CGREEN + "OK, now we have our ownhub - we will use it to build/deploy odoo builder\n")
+        odoo_ip = input(self.CBOLD + self.CWHITE2 + "Please input your docker ip: ")
         print(
             self.CEND
             + self.CGREEN
@@ -249,8 +285,66 @@ class OwnHub(j.application.JSBaseClass):
         j.builders.apps.odoo.start()
         print(self.CBOLD + self.CGREEN + "\nCongratulations now you have Odoo check it on http://%s:8069\n" % odoo_ip)
         # sandbox
-        input(self.CBOLD + self.CWHITE2 + "Press enter to the next part: sandboxing and making an flist\n")
+        input(
+            self.CBOLD
+            + self.CWHITE2
+            + "Press enter to the next part: sandboxing and making an flist to deploy it on a remote zos container\n"
+        )
 
+        # now we have odoo flist, deploying it on a remote node
+        merged_flist = input(
+            self.CBOLD + self.CWHITE2 + "Do you have a ready flist of the odoo to create the zos container (y/[n])? "
+        )
+        if merged_flist == "y":
+            flist_url = input("First enter the link to the merged flist: ")
+            ip_node = input("Then enter the node's IP to create the container on ")
+            jwt = input("Then enter the node's jwt if required: ")
+            self._create_container(flist_url, ip_node, jwt)
+            print(self.CBOLD + self.CGREEN + "Done and odoo available at http://%s:8069" % ip_node)
+            return
+
+        zhub_client = self._create_zhub_client()
+        j.builders.apps.odoo.sandbox(zhub_client=zhub_client, flist_create=True, reset=True)
+
+        print(
+            self.CEND
+            + self.CGREEN
+            + "\nFlist created and uploaded on https://hub.grid.tf/HUB_USERNAME/odoo.flist where HUN_USERNAME is your username on hub.grid.tf\n\n\n"
+        )
+
+        # Merge flist with jumpscale flist
+        input(self.CBOLD + self.CWHITE2 + "\nEnter any key for the next step: (Merge flist with jumpscale flist)\n")
+        print(
+            self.CEND
+            + self.CGREEN
+            + """Now you should merge the flist generated with a jumpscale flist!
+        You can do the merge manually by visiting https://hub.grid.tf/merge
+
+        based on: https://hub.grid.tf/HUB_USERNAME/odoo.flist
+        merge with:  https://hub.grid.tf/tf-autobuilder/threefoldtech-jumpscaleX-autostart-development.flist
+
+        Once the merge is done, get the url created for the merged flist to create a container with it./n
+        """
+        )
+        # Create container
+        flist_root_url = input(
+            self.CBOLD + self.CWHITE2 + "\nEnter the url once you have recieved the merged flist's url!\n"
+        )
+        counter = 0
+        while not flist_root_url and counter < 6:
+            flist_root_url = input(self.CBOLD + self.CWHITE2 + "\nEnter again the merged flist's url!\n")
+            counter += 1
+        ip_node = input(self.CBOLD + self.CWHITE2 + "\nThen enter the node's IP to create the container on")
+        jwt = input("Then enter the node's jwt if required: ")
+        self._create_container(flist_root_url, ip_node, jwt)
+        print(self.CBOLD + self.CGREEN + "\nDone and your odoo available at http://%s:8069\n" % ip_node)
+        print(
+            self.CBOLD
+            + self.CGREEN
+            + "Congratulations you now have your zos container with odoo!, wait for it initalize then use it\n"
+        )
+
+    # delete all stuff
     def cleanup(self):
         """
         Cleanup a previous run of the tutorial
@@ -264,6 +358,8 @@ class OwnHub(j.application.JSBaseClass):
         j.builders.apps.hub.stop()
         j.builders.apps.hub.reset()
 
+        j.builders.apps.odoo.stop()
+        j.builders.apps.hub.reset()
         if j.clients.zos.exists("tutorials"):
             j.clients.zos.get("zhub").containers.get("tutorials").stop()
 
