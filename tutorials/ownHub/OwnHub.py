@@ -45,7 +45,7 @@ class OwnHub(j.application.JSBaseClass):
         setup_mode = input(
             self.CBOLD
             + self.CWHITE2
-            + """Please choose and enter the mode of setup:
+            + """Please choose and enter the mode of setup your ownhub:
             1- Local on current system (This will build, install, start ownhub server will take a few minutes)
             2- On a remote zos container (This will deploy ownhub on a zos container, you must have zos's node's ip)
                 Choose (default 2): """
@@ -62,8 +62,9 @@ class OwnHub(j.application.JSBaseClass):
             input(self.CBOLD + self.CWHITE2 + "Enter any key for the next step: (Start ownhub) \n")
             print(self.CEND + self.CYELLOW + ">> j.builders.apps.hub.start()\n")
             j.builders.apps.hub.start()
-            print(self.CBOLD + self.CRED + "\nDone and ownhub available at %s:5555\n" % docker_ip)
-            print(self.CBOLD + self.CRED + "Congratulations you now have your own hub!\n")
+            print(self.CBOLD + self.CGREEN + "\nDone and ownhub available at %s:5555\n" % docker_ip)
+            print(self.CBOLD + self.CGREEN + "Congratulations you now have your own hub!\n")
+            return
 
         merged_flist = input(
             self.CBOLD
@@ -225,6 +226,31 @@ class OwnHub(j.application.JSBaseClass):
             env={"IP_PORT": ip_node + ":5555"},
         ).get()
 
+    def builder_example(self, odoo_ip):
+        # intro
+        print(
+            self.CEND
+            + self.CGREEN
+            + "\nIn this part we will take `builder odoo` as an example, we will go through its life cycles\n"
+        )
+        input(self.CBOLD + self.CWHITE2 + "\nPress enter to the next part: Installation\n")
+        # install
+        print(self.CEND + self.CGREEN + "\nInstall Method calls build at first- this may take a few minutes\n")
+        print(self.CEND + self.CYELLOW + "\n>> j.builders.apps.odoo.install()\n")
+        input(self.CBOLD + self.CWHITE2 + "\nPress enter to install\n")
+        j.builders.apps.odoo.install(reset=True)
+        # test
+        # input(self.CBOLD + self.CWHITE2 + "\nPress enter to the next part: Test the installation\n")
+        # print(self.CEND + self.CYELLOW + "\n>> j.builders.apps.odoo.test()\n")
+        # j.builders.apps.odoo.test()
+        # start
+        input(self.CBOLD + self.CWHITE2 + "\nPress enter to the next part: starting the server\n")
+        print(self.CEND + self.CYELLOW + "\n>> j.builders.apps.odoo.start()\n")
+        j.builders.apps.odoo.start()
+        print(self.CBOLD + self.CGREEN + "\nCongratulations now you have Odoo check it on http://%s:8069\n" % odoo_ip)
+        # sandbox
+        input(self.CBOLD + self.CWHITE2 + "Press enter to the next part: sandboxing and making an flist\n")
+
     def cleanup(self):
         """
         Cleanup a previous run of the tutorial
@@ -232,9 +258,12 @@ class OwnHub(j.application.JSBaseClass):
         if j.clients.itsyouonline.exists("tutorials"):
             j.clients.itsyouonline.delete("tutorials")
 
-        j.clients.zhub.get("tutorials").delete()
-        j.clients.zos
+        if j.clients.zhub.exists("tutorials"):
+            j.clients.zhub.delete("tutorials")
+
         j.builders.apps.hub.stop()
         j.builders.apps.hub.reset()
-        j.clients.zos.get("zhub").containers.get("tutorials").stop()
+
+        if j.clients.zos.exists("tutorials"):
+            j.clients.zos.get("zhub").containers.get("tutorials").stop()
 
