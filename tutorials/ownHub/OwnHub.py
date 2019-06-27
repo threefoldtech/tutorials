@@ -262,7 +262,7 @@ class OwnHub(j.application.JSBaseClass):
     # builder lifecycle example
     def _builder_example(self):
         # intro
-        print(self.CEND + self.CGREEN + "OK, now we have our ownhub - we will use it to build/deploy odoo builder\n")
+        print(self.CBOLD + self.CYELLOW + "OK, now we have our ownhub - we will use it to build/deploy odoo builder\n")
         odoo_ip = input(self.CBOLD + self.CWHITE2 + "Please input your docker ip: ")
         print(
             self.CEND
@@ -290,7 +290,6 @@ class OwnHub(j.application.JSBaseClass):
             + self.CWHITE2
             + "Press enter to the next part: sandboxing and making an flist to deploy it on a remote zos container\n"
         )
-
         # now we have odoo flist, deploying it on a remote node
         merged_flist = input(
             self.CBOLD + self.CWHITE2 + "Do you have a ready flist of the odoo to create the zos container (y/[n])? "
@@ -303,29 +302,60 @@ class OwnHub(j.application.JSBaseClass):
             print(self.CBOLD + self.CGREEN + "Done and odoo available at http://%s:8069" % ip_node)
             return
 
-        zhub_client = self._create_zhub_client()
-        j.builders.apps.odoo.sandbox(zhub_client=zhub_client, flist_create=True, reset=True)
-
-        print(
-            self.CEND
-            + self.CGREEN
-            + "\nFlist created and uploaded on https://hub.grid.tf/HUB_USERNAME/odoo.flist where HUN_USERNAME is your username on hub.grid.tf\n\n\n"
+        hub_name = input(
+            self.CBOLD
+            + self.CWHITE2
+            + """Do you want to generate the flist using 
+            1- zhub
+            2- ownhub
+            choose (1/[2])? """
         )
+        if hub_name == "1":
+            zhub_client = self._create_zhub_client()
+            j.builders.apps.odoo.sandbox(zhub_client=zhub_client, flist_create=True, reset=True)
 
-        # Merge flist with jumpscale flist
-        input(self.CBOLD + self.CWHITE2 + "\nEnter any key for the next step: (Merge flist with jumpscale flist)\n")
-        print(
-            self.CEND
-            + self.CGREEN
-            + """Now you should merge the flist generated with a jumpscale flist!
-        You can do the merge manually by visiting https://hub.grid.tf/merge
+            print(
+                self.CEND
+                + self.CGREEN
+                + "\nFlist created and uploaded on https://hub.grid.tf/HUB_USERNAME/odoo.flist where HUN_USERNAME is your username on hub.grid.tf\n\n\n"
+            )
 
-        based on: https://hub.grid.tf/HUB_USERNAME/odoo.flist
-        merge with:  https://hub.grid.tf/tf-autobuilder/threefoldtech-jumpscaleX-autostart-development.flist
+            # Merge flist with jumpscale flist
+            input(self.CBOLD + self.CWHITE2 + "\nEnter any key for the next step: (Merge flist with jumpscale flist)\n")
+            print(
+                self.CEND
+                + self.CGREEN
+                + """Now you should merge the flist generated with a jumpscale flist!
+            You can do the merge manually by visiting https://hub.grid.tf/merge
 
-        Once the merge is done, get the url created for the merged flist to create a container with it./n
-        """
-        )
+            based on: https://hub.grid.tf/HUB_USERNAME/odoo.flist
+            merge with:  https://hub.grid.tf/tf-autobuilder/threefoldtech-jumpscaleX-autostart-development.flist
+
+            Once the merge is done, get the url created for the merged flist to create a container with it./n
+            """
+            )
+
+        else:
+            print(self.CEND + self.CYELLOW + "\n>> j.builders.apps.odoo.sandbox()\n")
+            own_hub_client = j.clients.zhub.get("tutorials", url="http://%s:5555/api" % odoo_ip)
+            j.builders.apps.odoo.sandbox(zhub_client=own_hub_client, flist_create=True, reset=True)
+            print(
+                self.CEND
+                + self.CGREEN
+                + """\n
+            Now you should merge the flist generated with a jumpscale flist!
+            at: http://{odoo_ip}:5555
+            You can do the merge manually by visiting https://{odoo_ip}:5555/merge
+
+            based on: https://{odoo_ip}/Administrator/odoo.flist
+            merge with:  https://hub.grid.tf/tf-autobuilder/threefoldtech-jumpscaleX-autostart-development.flist
+
+            Once the merge is done, get the url created for the merged flist to create a container with it.\n
+            """.format(
+                    odoo_ip=odoo_ip
+                )
+            )
+
         # Create container
         flist_root_url = input(
             self.CBOLD + self.CWHITE2 + "\nEnter the url once you have recieved the merged flist's url!\n"
@@ -358,8 +388,5 @@ class OwnHub(j.application.JSBaseClass):
         j.builders.apps.hub.stop()
         j.builders.apps.hub.reset()
 
-        j.builders.apps.odoo.stop()
-        j.builders.apps.hub.reset()
         if j.clients.zos.exists("tutorials"):
             j.clients.zos.get("zhub").containers.get("tutorials").stop()
-
