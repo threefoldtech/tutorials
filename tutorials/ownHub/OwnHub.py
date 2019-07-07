@@ -195,7 +195,7 @@ class OwnHub(j.application.JSBaseClass):
                     secret=iyo_client_secret,
                 )
                 iyo_client.save()
-                self._print_execution(iyo_client)
+                iyo_client
 
                 self._get_input("ENTER any key for the next step: (generate token)... ")
 
