@@ -1,4 +1,9 @@
-class HelperIO:
+from Jumpscale import j
+
+JSBASE = j.application.JSBaseClass
+
+
+class Tutorial(JSBASE):
     """
     used colors and styles
     # font style
@@ -12,9 +17,11 @@ class HelperIO:
         self._CWHITE2 = "\33[97m"
     """
 
+    __jslocation__ = "j.sal.tutorial"
+
     ## helper styling functions
     @staticmethod
-    def _get_input(text, color="\33[97m", style="\33[1m"):
+    def get_input(text, color="\33[97m", style="\33[1m"):
         """
         for input from user Text color: self._CWHITE2 - Text style: self._CBOLD
         : param color: defines text color
@@ -26,7 +33,7 @@ class HelperIO:
         return input_from_user
 
     @staticmethod
-    def _print_headline(text, color="\33[32m", style="\33[1m"):
+    def print_headline(text, color="\33[32m", style="\33[1m"):
         """
         print headline texts Text color: self._CGREEN - Text style: self._CBOLD
         : param color: defines text color
@@ -36,7 +43,7 @@ class HelperIO:
         print(style + color + "\n***" + text + "***")
 
     @staticmethod
-    def _print_headline2(text, color="\33[33m", style="\33[1m"):
+    def print_headline2(text, color="\33[33m", style="\33[1m"):
         """
         print headline texts Text color: self._CYELLOW - Text style: self._CBOLD
         : param color: defines text color
@@ -46,7 +53,7 @@ class HelperIO:
         print(style + color + "\n" + text)
 
     @staticmethod
-    def _print_command(text, color="\33[33m", style="\33[0m"):
+    def print_command(text, color="\33[33m", style="\33[0m"):
         """
         print command before execution: self._CYELLOW - Text style: self._CEND
         : param color: defines text color
@@ -56,7 +63,7 @@ class HelperIO:
         print(style + color + "\n>> " + text)
 
     @staticmethod
-    def _print_explain(text, color="\33[32m", style="\33[0m"):
+    def print_explain(text, color="\33[32m", style="\33[0m"):
         """
         print explinations to some commands: self._CGREEN - Text style: self._CEND
         : param color: defines text color
@@ -66,7 +73,7 @@ class HelperIO:
         print(style + color + "\n" + text)
 
     @staticmethod
-    def _print_execution(text, color="\33[90m", style="\33[0m"):
+    def print_execution(text, color="\33[90m", style="\33[0m"):
         """
         print execution log for commands: self._CGREY - Text style: self._CEND
         : param color: defines text color
@@ -76,7 +83,7 @@ class HelperIO:
         print(style + color + "\n" + text)
 
     @staticmethod
-    def _print_warining(text, color="\33[31m", style="\33[1m"):
+    def print_warining(text, color="\33[31m", style="\33[1m"):
         """
         print warnings for dangerous commands: self._CRED - Text style: self._CBOLD
         : param color: defines text color
